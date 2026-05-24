@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus, Check, Play, RefreshCw } from 'lucide-react';
+import { Plus, Play, RefreshCw } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import ToolCard from './ToolCard';
 import UseCaseSelect from './UseCaseSelect';

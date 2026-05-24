@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   ArrowRight,
   Check,
-  DollarSign,
   Sparkles,
-  HelpCircle,
-  Plus,
   GitBranch,
   ShieldCheck,
   TrendingDown,
@@ -15,18 +12,13 @@ import {
   Globe,
   Settings,
   Database,
-  MessageSquare,
-  PenTool,
-  CloudLightning,
   ChevronDown,
   Terminal,
-  Cpu,
-  Users,
-  Play,
   RotateCcw
 } from 'lucide-react';
 import InteractiveDashboard from './components/InteractiveDashboard';
 import SpendForm from './components/audit/SpendForm';
+import { auditEngine } from './services/auditEngine';
 
 export default function App() {
   // State Router: 'landing' | 'results'
@@ -71,20 +63,10 @@ export default function App() {
     }
   };
 
-  // Computations for Results screen
-  const calculateResults = () => {
-    if (!auditData) return { totalSpend: 0, wastedSpend: 0, annualSavings: 0, monthlySavings: 0 };
-
-    const totalSpend = auditData.tools.reduce((sum, t) => sum + (t.monthlySpend || 0), 0);
-    const wasteRate = 0.285; // 28.5% waste
-    const monthlySavings = Math.round(totalSpend * wasteRate);
-    const annualSavings = monthlySavings * 12;
-    const wastedSpend = Math.round(totalSpend * 0.35); // 35% overall wasted spend estimate
-
-    return { totalSpend, wastedSpend, annualSavings, monthlySavings };
-  };
-
-  const { totalSpend, wastedSpend, annualSavings, monthlySavings } = calculateResults();
+  // Computations for Results screen via deterministic Fintech Cost Optimization Engine
+  const auditResult = auditData 
+    ? auditEngine.run(auditData)
+    : { monthlySavings: 0, annualSavings: 0, recommendations: [], summary: { wasteScore: 0, stackEfficiency: 'Optimal', opportunitiesFound: 0, totalSpend: 0 } };
 
   const timelineSteps = [
     {
@@ -511,148 +493,217 @@ export default function App() {
 
       {/* RENDER AUDIT RESULTS PAGE */}
       {currentRoute === 'results' && auditData && (
-        <section className="section-container">
+        <section className="section-container" style={{ padding: '40px 24px' }}>
+          {/* Header */}
           <div className="results-header-box">
             <div className="hero-tag">
               <div className="hero-tag-dot"></div>
-              <span>Audit Run Successful</span>
+              <span>Fintech Cost Audit Complete</span>
             </div>
-            <h1 className="title-large" style={{ marginBottom: '16px' }}>
-              Your AI Cost Recovery Report
+            <h1 className="title-large" style={{ marginBottom: '16px', fontSize: '48px' }}>
+              Your Cost Recovery Report
             </h1>
-            <p className="hero-subtitle" style={{ maxWidth: '640px' }}>
-              We analyzed {auditData.tools.length} active platforms across your enterprise team of {auditData.teamSize} members. Sift AI has identified significant consolidation pathways.
+            <p className="hero-subtitle" style={{ maxWidth: '640px', marginBottom: '24px' }}>
+              We analyzed {auditData.tools.length} active platform integrations across your enterprise team of {auditData.teamSize} members using our rule-based Fintech Audit Engine.
             </p>
           </div>
 
           <div className="results-console-card">
-            {/* Stats Row */}
+            {/* SAVINGS HERO */}
+            <div className="premium-savings-hero">
+              <div className="hero-glow-back"></div>
+              <div className="savings-hero-content">
+                <span className="savings-hero-sub">Estimated Annual Recovery Opportunity</span>
+                <h2 className="savings-hero-big text-gradient-accent">
+                  You can save ${auditResult.annualSavings.toLocaleString()}/year
+                </h2>
+                <p className="savings-hero-desc">
+                  Consolidating subscription packages and implementing prompt restrictions will recover approx. <strong>${auditResult.monthlySavings.toLocaleString()}/month</strong> instantly.
+                </p>
+              </div>
+            </div>
+
+            {/* AUDIT SCORE AND METER DETAILS */}
             <div className="results-stats-row">
               <div className="dashboard-stat-card">
-                <div className="stat-label">Total Monthly AI Spend</div>
+                <div className="stat-label">Stack Waste Index</div>
                 <div className="stat-value-container">
-                  <span className="stat-symbol">$</span>
-                  <span className="stat-value font-mono">{totalSpend.toLocaleString()}</span>
+                  <span className="stat-value font-mono color-glow-text" style={{ color: auditResult.summary.wasteScore > 30 ? '#ff8b77' : auditResult.summary.wasteScore > 15 ? '#f59e0b' : '#10b981' }}>
+                    {auditResult.summary.wasteScore}%
+                  </span>
                 </div>
                 <div className="stat-footer-text">
                   <TrendingDown size={12} className="warning-text-icon" />
-                  <span>Unoptimized operational profile</span>
+                  <span>Gross billing rate inefficiencies</span>
                 </div>
               </div>
 
-              <div className="dashboard-stat-card border-glow">
-                <div className="stat-label flex-between">
-                  <span>Potential Monthly Recovery</span>
-                  <span className="pulse-tag">Highly Viable</span>
-                </div>
-                <div className="stat-value-container color-glow-text">
-                  <span className="stat-symbol">$</span>
-                  <span className="stat-value font-mono">{monthlySavings.toLocaleString()}</span>
+              <div className="dashboard-stat-card">
+                <div className="stat-label">Stack Efficiency Rank</div>
+                <div className="stat-value-container">
+                  <span className="stat-value" style={{ color: auditResult.summary.stackEfficiency === 'Low' ? '#ff8b77' : auditResult.summary.stackEfficiency === 'Moderate' ? '#f59e0b' : '#10b981' }}>
+                    {auditResult.summary.stackEfficiency}
+                  </span>
                 </div>
                 <div className="stat-footer-text">
-                  <Sparkles size={12} className="green-text-icon" />
-                  <span className="green-text">
-                    Typical teams recover 15–30% of AI spend
-                  </span>
+                  <ShieldCheck size={12} className="accent-text-icon" />
+                  <span>Cost-to-benefit profile score</span>
                 </div>
               </div>
 
               <div className="dashboard-stat-card highlighted">
-                <div className="stat-label">Estimated Annual Recovery</div>
+                <div className="stat-label">Optimization Paths Found</div>
                 <div className="stat-value-container text-gradient-accent">
-                  <span className="stat-symbol">$</span>
-                  <span className="stat-value font-mono">{annualSavings.toLocaleString()}</span>
+                  <span className="stat-value font-mono">{auditResult.summary.opportunitiesFound}</span>
                 </div>
                 <div className="stat-footer-text">
-                  <ShieldCheck size={12} className="accent-text-icon" />
-                  <span>Autopilot downgrade value</span>
+                  <Sparkles size={12} className="accent-text-icon" />
+                  <span>Actionable recovery guidelines</span>
                 </div>
               </div>
             </div>
 
-            {/* Split Panel Grid */}
+            {/* SPLIT LAYOUT: LEFT RECOMMENDATIONS, RIGHT SPENDING BREAKDOWN & CTA */}
             <div className="results-grid-split">
-              {/* Left Panel: Checklist optimizations */}
-              <div className="results-optimizations-panel">
-                <div className="panel-header" style={{ marginBottom: '8px' }}>
+              {/* Recommendations List */}
+              <div className="results-optimizations-panel" style={{ flexGrow: 1 }}>
+                <div className="panel-header" style={{ marginBottom: '16px' }}>
                   <div className="panel-title-sec">
                     <Zap size={15} className="accent-text-icon" />
-                    <h4>Day 3 Audit Engine Action List (Preview)</h4>
+                    <h4>Recommended Recovery Operations</h4>
                   </div>
-                  <span className="panel-count font-mono">{auditData.tools.length} Connectors Scanned</span>
+                  <span className="panel-count font-mono">{auditResult.recommendations.length} Flagged</span>
                 </div>
 
                 <div className="checklist-list">
-                  {auditData.tools.map((item, idx) => {
-                    const toolName = getToolDisplayName(item.toolId);
-                    const planName = getPlanDisplayName(item.toolId, item.planId);
-                    const cost = item.monthlySpend || 0;
-                    const seats = item.seats || 1;
-
-                    return (
-                      <div key={idx} className="results-checklist-item">
-                        <div className="results-checklist-item-check">
-                          <Check size={12} />
-                        </div>
-                        <div className="results-checklist-item-text">
-                          <div className="results-audit-item-head">
-                            <h5>{toolName} ({planName} - {seats} seats)</h5>
+                  {auditResult.recommendations.length > 0 ? (
+                    auditResult.recommendations.map((rec, idx) => (
+                      <div key={idx} className="results-checklist-item" style={{ borderLeft: rec.severity === 'high' ? '3px solid #ff8b77' : rec.severity === 'medium' ? '3px solid #f59e0b' : '3px solid var(--accent)' }}>
+                        <div className="results-checklist-item-text" style={{ width: '100%' }}>
+                          <div className="results-audit-item-head" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <h5 style={{ fontSize: '14px', margin: 0 }}>{rec.title}</h5>
+                              <span className={`severity-badge severity-${rec.severity}`}>
+                                {rec.severity}
+                              </span>
+                            </div>
                             <span className="results-reclaim-badge font-mono">
-                              Reclaim ~${Math.round(cost * 0.28)}/mo
+                              Save ${rec.monthlySavings}/mo
                             </span>
                           </div>
-                          <p style={{ color: 'var(--text-secondary)', fontSize: '12px', lineHeight: 1.4 }}>
-                            {item.toolId === 'chatgpt' && `12% of user seats in marketing show 0 prompt actions in 45 days. Consolidate to standard conversational tiers.`}
-                            {item.toolId === 'claude' && `High seat overlap detected with ChatGPT. Restructure plans to consolidate onto a single core conversational suite.`}
-                            {item.toolId === 'cursor' && `Developer seats allocated to managers who log 0 IDE queries. Downgrade PM seats to standard accounts.`}
-                            {item.toolId === 'copilot' && `Junior engineers equipped with Cursor Composer do not require duplicate Copilot business seat licenses.`}
-                            {item.toolId === 'gemini' && `Workspace additions are inactive for employees who only require basic Gemini Advanced access.`}
-                            {item.toolId === 'openai_api' && `recursive playground backend loop processed uncached tokens. Set rate-restrictions and rotate sandbox API keys.`}
-                            {item.toolId === 'anthropic_api' && `repetitive contextual tokens processed. Setup Anthropic prompt caching integrations instantly.`}
-                            {(!['chatgpt', 'claude', 'cursor', 'copilot', 'gemini', 'openai_api', 'anthropic_api'].includes(item.toolId)) && `Active seat usage below threshold. Downgrade unutilized seats and optimize plan overhead.`}
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '12.5px', marginTop: '6px', lineHeight: '1.5' }}>
+                            {rec.reason}
                           </p>
+                          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', display: 'block', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Affected Stack: {rec.tool}
+                          </span>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))
+                  ) : (
+                    <div className="all-clean-state" style={{ padding: '32px 16px' }}>
+                      <div className="all-clean-icon-wrapper">
+                        <ShieldCheck size={28} className="accent-text-icon" />
+                      </div>
+                      <h5>Excellent Configuration!</h5>
+                      <p>Our cost optimization engine discovered no obvious overspending paths for your stack setup. All systems are running efficiently.</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Right Panel: Metadata & details */}
-              <div className="results-optimizations-panel">
-                <div className="panel-header" style={{ marginBottom: '8px' }}>
-                  <div className="panel-title-sec">
-                    <Settings size={15} className="accent-text-icon" />
-                    <h4>Audit Parameters</h4>
+              {/* Side Panel: Spending Breakdown & Email Capture */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Spending Breakdown */}
+                <div className="results-optimizations-panel">
+                  <div className="panel-header" style={{ marginBottom: '16px' }}>
+                    <div className="panel-title-sec">
+                      <Settings size={15} className="accent-text-icon" />
+                      <h4>Monthly Spend Breakdown</h4>
+                    </div>
+                  </div>
+
+                  <div className="breakdown-details-panel">
+                    <div className="breakdown-meter-container">
+                      <div className="breakdown-meter-label flex-between">
+                        <span>Current Monthly Spend</span>
+                        <span className="font-mono" style={{ fontWeight: 600 }}>${auditResult.summary.totalSpend.toLocaleString()}</span>
+                      </div>
+                      <div className="breakdown-meter-bar-bg">
+                        <div className="breakdown-meter-bar current" style={{ width: '100%' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="breakdown-meter-container" style={{ marginTop: '20px' }}>
+                      <div className="breakdown-meter-label flex-between">
+                        <span>Optimized Monthly Spend</span>
+                        <span className="font-mono" style={{ color: 'var(--accent-soft)', fontWeight: 600 }}>
+                          ${(auditResult.summary.totalSpend - auditResult.monthlySavings).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="breakdown-meter-bar-bg">
+                        <div 
+                          className="breakdown-meter-bar optimized" 
+                          style={{ 
+                            width: `${auditResult.summary.totalSpend > 0 ? ((auditResult.summary.totalSpend - auditResult.monthlySavings) / auditResult.summary.totalSpend) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <hr className="form-section-divider" style={{ margin: '20px 0' }} />
+
+                    <div className="breakdown-row" style={{ marginBottom: '10px' }}>
+                      <span style={{ fontSize: '13px' }}>Primary Use Case</span>
+                      <span style={{ textTransform: 'capitalize', fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>{auditData.primaryUseCase}</span>
+                    </div>
+                    <div className="breakdown-row" style={{ marginBottom: '10px' }}>
+                      <span style={{ fontSize: '13px' }}>Total Team Size</span>
+                      <span className="font-mono" style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>{auditData.teamSize} members</span>
+                    </div>
+                    <div className="breakdown-row">
+                      <span style={{ fontSize: '13px' }}>Monthly Recovery Yield</span>
+                      <span className="font-mono" style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>
+                        +${auditResult.monthlySavings.toLocaleString()}/mo
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="results-breakdown-details" style={{ borderTop: 'none', paddingTop: '0' }}>
-                  <div className="breakdown-row" style={{ marginBottom: '10px' }}>
-                    <span>Workload Use Case</span>
-                    <span style={{ textTransform: 'capitalize' }}>{auditData.primaryUseCase}</span>
-                  </div>
-                  <div className="breakdown-row" style={{ marginBottom: '10px' }}>
-                    <span>Total Team Size</span>
-                    <span className="font-mono">{auditData.teamSize} members</span>
-                  </div>
-                  <div className="breakdown-row" style={{ marginBottom: '10px' }}>
-                    <span>Estimated Wasted Spend</span>
-                    <span className="font-mono" style={{ color: '#ff8b77' }}>${wastedSpend.toLocaleString()}/mo</span>
-                  </div>
-                  <div className="breakdown-row">
-                    <span>Audit Recommendation</span>
-                    <span style={{ color: 'var(--accent-soft)', fontWeight: 600, fontSize: '11px', textAlign: 'right' }}>
-                      {totalSpend > 12000 ? "Consolidate Enterprise API Caching" : "Downgrade Pro seat registers"}
-                    </span>
-                  </div>
-                </div>
+                {/* Get Full Audit Report Email Capture */}
+                <div className="results-optimizations-panel highlighted-card">
+                  <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sparkles size={14} className="accent-text-icon" />
+                    <span>Get Full Audit Report</span>
+                  </h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '12px', lineHeight: 1.5, marginBottom: '16px' }}>
+                    Download a comprehensive SOC2-compliant cost optimization breakdown PDF complete with step-by-step downgrade guides.
+                  </p>
 
-                <hr className="form-section-divider" style={{ margin: '16px 0' }} />
-
-                <div className="results-guarantee-badge" style={{ padding: '14px', borderRadius: '10px' }}>
-                  <ShieldCheck size={16} />
-                  <span style={{ fontWeight: 600 }}>SOC2 Prompt-Privacy Protected</span>
+                  <div className="cta-email-box">
+                    {!isSubmitted ? (
+                      <form onSubmit={handleEmailSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <input
+                          type="email"
+                          required
+                          placeholder="enter enterprise email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="cta-input-field"
+                          style={{ width: '100%', fontSize: '12px', padding: '10px 14px' }}
+                        />
+                        <button type="submit" className="btn-primary" style={{ width: '100%', padding: '10px 14px', fontSize: '12px', justifyContent: 'center' }}>
+                          <span>Dispatch PDF Report</span>
+                          <ArrowRight size={12} />
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="cta-micro-feedback" style={{ padding: '10px', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '6px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981' }}>
+                        <Check size={12} />
+                        <span>PDF Scheduled for delivery!</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -664,6 +715,7 @@ export default function App() {
                 setAuditData(null);
               }}
               className="results-back-btn"
+              style={{ marginTop: '40px' }}
             >
               <RotateCcw size={14} />
               <span>Audit Another Stack</span>

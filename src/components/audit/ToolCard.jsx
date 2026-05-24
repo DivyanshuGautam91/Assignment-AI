@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import { AI_TOOLS } from '../../constants/aiTools';
 import { AI_PLANS } from '../../constants/plans';

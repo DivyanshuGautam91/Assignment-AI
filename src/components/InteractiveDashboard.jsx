@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   TrendingDown, 
   Sparkles, 
@@ -8,9 +8,7 @@ import {
   ShieldCheck,
   Zap,
   BarChart3,
-  Cpu,
-  Layers,
-  Users
+  Layers
 } from 'lucide-react';
 
 export default function InteractiveDashboard() {
