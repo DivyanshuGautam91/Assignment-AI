@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ArrowRight,
   Check,
@@ -16,14 +16,23 @@ import {
   Terminal,
   RotateCcw
 } from 'lucide-react';
-import InteractiveDashboard from './components/InteractiveDashboard';
-import SpendForm from './components/audit/SpendForm';
+
+// Routing & Storage
+import { useRouter, navigate } from './lib/router';
+import { storage } from './lib/storage';
 import { auditEngine } from './services/auditEngine';
 
+// Page components
+import AuditPage from './pages/AuditPage';
+import LoadingPage from './pages/LoadingPage';
+import ResultsPage from './pages/ResultsPage';
+import NotFoundPage from './pages/NotFoundPage';
+
+// Components
+import InteractiveDashboard from './components/InteractiveDashboard';
+
 export default function App() {
-  // State Router: 'landing' | 'results'
-  const [currentRoute, setCurrentRoute] = useState('landing');
-  const [auditData, setAuditData] = useState(null);
+  const { path } = useRouter();
 
   // Timeline Step State
   const [activeStep, setActiveStep] = useState(0);
@@ -41,16 +50,16 @@ export default function App() {
 
   const handleScrollToForm = (e) => {
     e.preventDefault();
+    if (path !== '/') {
+      navigate('/audit');
+      return;
+    }
     const formEl = document.getElementById('calculator');
     if (formEl) {
       formEl.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate('/audit');
     }
-  };
-
-  const handleFormSubmit = (data) => {
-    setAuditData(data);
-    setCurrentRoute('results');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleEmailSubmit = (e) => {
@@ -58,15 +67,40 @@ export default function App() {
     if (email.trim() && email.includes('@')) {
       setIsSubmitted(true);
       setTimeout(() => {
+        setIsSubmitted(false);
         setEmail('');
       }, 3000);
     }
   };
 
-  // Computations for Results screen via deterministic Fintech Cost Optimization Engine
-  const auditResult = auditData 
-    ? auditEngine.run(auditData)
-    : { monthlySavings: 0, annualSavings: 0, recommendations: [], summary: { wasteScore: 0, stackEfficiency: 'Optimal', opportunitiesFound: 0, totalSpend: 0 } };
+  // See Sample Audit CTA Trigger
+  const handleSeeSampleAudit = (e) => {
+    e.preventDefault();
+
+    // 1. Generate realistic, high-impact mock data for hyper-growth startup (Wasteful rating)
+    const sampleInput = {
+      tools: [
+        { toolId: 'chatgpt', planId: 'team', seats: 2, monthlySpend: 60 },
+        { toolId: 'claude', planId: 'pro', seats: 12, monthlySpend: 240 },
+        { toolId: 'cursor', planId: 'business', seats: 8, monthlySpend: 320 },
+        { toolId: 'copilot', planId: 'business', seats: 15, monthlySpend: 285 },
+        { toolId: 'openai_api', planId: 'pay_as_you_go', seats: 1, monthlySpend: 980 },
+        { toolId: 'anthropic_api', planId: 'pay_as_you_go', seats: 1, monthlySpend: 420 }
+      ],
+      teamSize: 18,
+      primaryUseCase: 'mixed'
+    };
+
+    // 2. Compute cost consolidation audit metrics
+    const sampleResult = auditEngine.run(sampleInput);
+
+    // 3. Save mock report logs to localStorage for seamless refresh persistence
+    storage.saveAuditInput(sampleInput);
+    storage.saveAuditResult(sampleResult);
+
+    // 4. Navigate to loading screen so investors/recruiters experience the premium loading progress
+    navigate('/audit-loading');
+  };
 
   const timelineSteps = [
     {
@@ -144,6 +178,329 @@ export default function App() {
     }
   ];
 
+  // Route Controller Dispatcher
+  const renderRoutedPage = () => {
+    switch (path) {
+      case '/':
+        return (
+          <>
+            {/* HERO SECTION */}
+            <section className="section-container hero-sec">
+              <div className="hero-tag">
+                <div className="hero-tag-dot"></div>
+                <span>Announcing Sift AI Audit 2.0</span>
+              </div>
+
+              <h1 className="title-large">
+                Stop overpaying for AI tools. <span className="text-gradient-accent">See where your budget leaks.</span>
+              </h1>
+
+              <p className="hero-subtitle">
+                Sift automatically audits your ChatGPT, Claude, Cursor, Copilot, and API usage. Discover duplicate active seats, overlapping models, and sandboxed key leaks instantly.
+              </p>
+
+              <div className="hero-cta-group">
+                <button onClick={() => navigate('/audit')} className="btn-primary">
+                  <span>Audit My AI Spend</span>
+                  <ArrowRight size={16} />
+                </button>
+                <button onClick={handleSeeSampleAudit} className="btn-secondary">
+                  <span>See Sample Audit</span>
+                </button>
+              </div>
+
+              {/* Live Mock Interactive Dashboard */}
+              <div className="premium-dashboard-wrapper">
+                <InteractiveDashboard />
+              </div>
+            </section>
+
+            {/* TRUSTED BY LOGOS MOCK */}
+            <section className="section-container" style={{ padding: '0 24px' }}>
+              <div className="trust-container">
+                <h4 className="trust-title">Trusted by AI-native hyper-growth tech teams</h4>
+                <div className="logos-grid">
+                  <div className="mock-logo">
+                    <div className="logo-shape"></div>
+                    <span>VERTEX</span>
+                  </div>
+                  <div className="mock-logo">
+                    <div className="logo-shape ring"></div>
+                    <span>ORBIT</span>
+                  </div>
+                  <div className="mock-logo">
+                    <div className="logo-shape triangle"></div>
+                    <span>LINEAR</span>
+                  </div>
+                  <div className="mock-logo">
+                    <div className="logo-shape"></div>
+                    <span>ACME.IO</span>
+                  </div>
+                  <div className="mock-logo">
+                    <div className="logo-shape ring"></div>
+                    <span>NUCLEUS</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* HOW IT WORKS SECTION */}
+            <section id="how-it-works" className="section-container">
+              <div className="section-head">
+                <span className="section-head-tag">Process Flow</span>
+                <h2 className="section-title">AI Cost Ingestion in three steps</h2>
+                <p className="section-desc">
+                  Connect Sift to your subscription consoles and workspace registries to compile a complete, secure model overspend audit.
+                </p>
+              </div>
+
+              <div className="timeline-section-split">
+                {/* Left: Navigation Steps */}
+                <div className="timeline-navigation">
+                  {timelineSteps.map((step, idx) => (
+                    <div
+                      key={idx}
+                      className={`timeline-step-item ${activeStep === idx ? 'active' : ''}`}
+                      onClick={() => setActiveStep(idx)}
+                    >
+                      <div className="step-number-badge font-mono">
+                        {idx + 1}
+                      </div>
+                      <div className="step-info-block">
+                        <span style={{ fontSize: '11px', color: 'var(--accent-soft)', fontWeight: 600, display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>{step.label}</span>
+                        <h3>{step.title}</h3>
+                        <p>{step.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Right: Step Visualizations */}
+                <div className="timeline-preview-frame">
+                  {activeStep === 0 && (
+                    <div className="mock-connect-hub">
+                      <span className="section-head-tag">Step 1: Ingest AI Stack</span>
+                      <h3 style={{ marginBottom: '12px' }}>Enter your team's AI footprint</h3>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>
+                        List active platforms, plan tiers, monthly budget estimates, and team size.
+                      </p>
+
+                      <div style={{ background: '#0e0e12', border: '1px solid var(--border-primary)', padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>Core Model Tool</span>
+                            <div style={{ background: '#18181b', border: '1px solid var(--border-primary)', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>ChatGPT Plus</span>
+                              <ChevronDown size={10} />
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>Seats Allocated</span>
+                            <div style={{ background: '#18181b', border: '1px solid var(--border-primary)', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', color: '#ffffff' }} className="font-mono">
+                              45 seats
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.15)', padding: '8px 12px', borderRadius: '6px', fontSize: '11px', color: 'var(--accent-soft)' }}>
+                          <Sparkles size={12} />
+                          <span>Selected: Claude Pro, Cursor Developer, OpenAI API</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeStep === 1 && (
+                    <div>
+                      <span className="section-head-tag">Step 2: AI Audit Engine</span>
+                      <h3 style={{ marginBottom: '12px' }}>Scan for seat duplication & context leaks</h3>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>
+                        Our algorithm runs cross-platform checks mapping workspace seat histories and sandbox API records.
+                      </p>
+
+                      <div style={{ background: '#0e0e12', border: '1px solid var(--border-primary)', padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          <span>Audit Search Progress</span>
+                          <span className="font-mono">88%</span>
+                        </div>
+                        <div style={{ height: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '999px', overflow: 'hidden' }}>
+                          <div style={{ width: '88%', height: '100%', background: 'var(--accent)' }}></div>
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#ff8b77', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                          <Zap size={10} />
+                          <span>Flagged: 4 overlapping ChatGPT+Claude Pro sets, $680 playground test loop</span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeStep === 2 && (
+                    <div>
+                      <span className="section-head-tag">Step 3: Instant Cost Recovery</span>
+                      <h3 style={{ marginBottom: '12px' }}>Personalized PDF savings report</h3>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
+                        Receive custom recommendations detailing active Pro licenses downgrade paths and key consolidations.
+                      </p>
+                      <div style={{ background: '#111815', border: '1px solid rgba(16, 185, 129, 0.15)', padding: '20px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '40px', height: '40px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, paddingLeft: '2px' }}>
+                          <ShieldCheck size={18} style={{ color: '#10b981' }} />
+                        </div>
+                        <div>
+                          <h5 style={{ color: '#ffffff', fontSize: '13px', marginBottom: '4px' }}>Sift AI Audit Successful</h5>
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                            Identified $1,120 monthly overspend. Custom optimization checklist generated.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* SUPPORTED TOOLS */}
+            <section id="supported-tools" className="section-container tools-hub-sec">
+              <div className="section-head">
+                <span className="section-head-tag">Supported AI Connectors</span>
+                <h2 className="section-title">Integrates across your active model stack</h2>
+                <p className="section-desc">
+                  Sift maps subscription plans, licensing logs, and raw token usage across all major generative AI interfaces and API channels.
+                </p>
+              </div>
+
+              <div className="tools-hub-grid">
+                {toolsList.map((tool, idx) => {
+                  const ToolIcon = tool.icon;
+                  return (
+                    <div
+                      key={idx}
+                      className="tool-hub-card"
+                      style={{ '--accent-local': tool.bg }}
+                    >
+                      <div className="tool-icon-wrapper">
+                        <ToolIcon size={24} />
+                      </div>
+                      <div>
+                        <span>{tool.name}</span>
+                        <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '4px' }}>{tool.category}</p>
+                      </div>
+                      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{tool.text}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* COMMON AI OVERSPENDING MISTAKES */}
+            <section id="mistakes" className="section-container">
+              <div className="section-head">
+                <span className="section-head-tag">Diagnostics Matrix</span>
+                <h2 className="section-title">Common AI overspending mistakes</h2>
+                <p className="section-desc">
+                  With fast AI adoption comes unchecked billing pipelines. Most development teams leak thousands on duplicate active tiers.
+                </p>
+              </div>
+
+              <div className="features-grid">
+                {overspendMistakes.map((mistake, idx) => {
+                  const MistakeIcon = mistake.icon;
+                  return (
+                    <div key={idx} className="feature-card">
+                      <div className="feature-icon-wrapper">
+                        <MistakeIcon size={20} />
+                      </div>
+                      <h3>{mistake.title}</h3>
+                      <p>{mistake.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* FAQ INTERACTIVE SECTION */}
+            <section id="faq" className="section-container">
+              <div className="section-head">
+                <span className="section-head-tag">Audit Details</span>
+                <h2 className="section-title">Frequently Asked Questions</h2>
+                <p className="section-desc">
+                  Got questions about integrations, enterprise security, and pricing audit recommendations? Review our answers.
+                </p>
+              </div>
+
+              <div className="faq-grid">
+                {faqs.map((faq, idx) => (
+                  <div
+                    key={idx}
+                    className={`faq-accordion-item ${openFaq === idx ? 'open' : ''}`}
+                  >
+                    <button
+                      className="faq-trigger-btn"
+                      onClick={() => toggleFaq(idx)}
+                    >
+                      <h4>{faq.question}</h4>
+                      <ChevronDown size={16} className="faq-chevron" />
+                    </button>
+
+                    <div className="faq-content-drawer">
+                      <p>{faq.answer}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* FINAL CTA NEWSLETTER SECTION */}
+            <section id="cta" className="section-container">
+              <div className="cta-banner-card">
+                <span className="section-head-tag">Instant Stack Scan</span>
+                <h2 className="cta-heading">Get your free AI Spend Audit</h2>
+                <p className="cta-desc">
+                  See how much your team could save on ChatGPT, Claude, Cursor, Copilot, and API spend. Connect Sift AI in under a minute.
+                </p>
+
+                <div className="cta-form-container">
+                  {!isSubmitted ? (
+                    <form onSubmit={handleEmailSubmit} className="cta-input-group">
+                      <input
+                        type="email"
+                        required
+                        placeholder="Enter your enterprise email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="cta-input-field"
+                      />
+                      <button type="submit" className="btn-cta-submit">
+                        <span>Get My Free Audit</span>
+                        <ArrowRight size={14} />
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="cta-micro-feedback">
+                      <Check size={16} />
+                      <span>Audit scheduled! We have dispatched setup instructions to your inbox.</span>
+                    </div>
+                  )}
+                  <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                    SOC2 Certified. Safe read-only API connectors. No credit card required.
+                  </span>
+                </div>
+              </div>
+            </section>
+          </>
+        );
+
+      case '/audit':
+        return <AuditPage />;
+
+      case '/audit-loading':
+        return <LoadingPage />;
+
+      case '/results':
+        return <ResultsPage />;
+
+      default:
+        return <NotFoundPage />;
+    }
+  };
 
   return (
     <div className="landing-layout">
@@ -153,583 +510,39 @@ export default function App() {
       {/* STICKY NAVBAR */}
       <header className="sticky-navbar">
         <div className="nav-container">
-          <a href="#" className="brand-logo" onClick={() => setCurrentRoute('landing')}>
+          <a href="#" className="brand-logo" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
             <div className="brand-dot"></div>
             <span>Sift AI</span>
           </a>
-          {currentRoute === 'landing' ? (
-            <nav className="nav-links">
-              <a href="#mistakes" className="nav-item">Why Audit</a>
-              <a href="#how-it-works" className="nav-item">How it Works</a>
-              <a href="#supported-tools" className="nav-item">Supported AI</a>
-              <a href="#calculator" className="nav-item">Spend Form</a>
-              <a href="#faq" className="nav-item">FAQ</a>
-            </nav>
-          ) : (
-            <nav className="nav-links">
-              <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); setCurrentRoute('landing'); }}>Home Page</a>
-            </nav>
-          )}
-          <a href="#calculator" className="nav-cta-btn" onClick={handleScrollToForm}>Audit My Spend</a>
+
+          <nav className="nav-links">
+            {path === '/' ? (
+              <>
+                <a href="#mistakes" className="nav-item">Why Audit</a>
+                <a href="#how-it-works" className="nav-item">How it Works</a>
+                <a href="#supported-tools" className="nav-item">Supported AI</a>
+                <a href="#faq" className="nav-item">FAQ</a>
+              </>
+            ) : (
+              <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); navigate('/'); }}>Home Console</a>
+            )}
+          </nav>
+
+          <button onClick={handleScrollToForm} className="nav-cta-btn">
+            Audit My Spend
+          </button>
         </div>
       </header>
 
-      {/* RENDER HOME LANDING PAGE */}
-      {currentRoute === 'landing' && (
-        <>
-          {/* HERO SECTION */}
-          <section className="section-container hero-sec">
-            <div className="hero-tag">
-              <div className="hero-tag-dot"></div>
-              <span>Announcing Sift AI Audit 2.0</span>
-            </div>
-
-            <h1 className="title-large">
-              Stop overpaying for AI tools. <span className="text-gradient-accent">See where your budget leaks.</span>
-            </h1>
-
-            <p className="hero-subtitle">
-              Sift automatically audits your ChatGPT, Claude, Cursor, Copilot, and API usage. Discover duplicate active seats, overlapping models, and sandboxed key leaks instantly.
-            </p>
-
-            <div className="hero-cta-group">
-              <a href="#calculator" className="btn-primary" onClick={handleScrollToForm}>
-                <span>Audit My AI Spend</span>
-                <ArrowRight size={16} />
-              </a>
-              <a href="#calculator" className="btn-secondary" onClick={handleScrollToForm}>
-                <span>See Sample Audit</span>
-              </a>
-            </div>
-
-            {/* Live Mock Interactive Dashboard */}
-            <div className="premium-dashboard-wrapper">
-              <InteractiveDashboard />
-            </div>
-          </section>
-
-          {/* TRUSTED BY LOGOS MOCK */}
-          <section className="section-container" style={{ padding: '0 24px' }}>
-            <div className="trust-container">
-              <h4 className="trust-title">Trusted by AI-native hyper-growth tech teams</h4>
-              <div className="logos-grid">
-                <div className="mock-logo">
-                  <div className="logo-shape"></div>
-                  <span>VERTEX</span>
-                </div>
-                <div className="mock-logo">
-                  <div className="logo-shape ring"></div>
-                  <span>ORBIT</span>
-                </div>
-                <div className="mock-logo">
-                  <div className="logo-shape triangle"></div>
-                  <span>LINEAR</span>
-                </div>
-                <div className="mock-logo">
-                  <div className="logo-shape"></div>
-                  <span>ACME.IO</span>
-                </div>
-                <div className="mock-logo">
-                  <div className="logo-shape ring"></div>
-                  <span>NUCLEUS</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* HOW IT WORKS SECTION */}
-          <section id="how-it-works" className="section-container">
-            <div className="section-head">
-              <span className="section-head-tag">Process Flow</span>
-              <h2 className="section-title">AI Cost Ingestion in three steps</h2>
-              <p className="section-desc">
-                Connect Sift to your subscription consoles and workspace registries to compile a complete, secure model overspend audit.
-              </p>
-            </div>
-
-            <div className="timeline-section-split">
-              {/* Left: Navigation Steps */}
-              <div className="timeline-navigation">
-                {timelineSteps.map((step, idx) => (
-                  <div
-                    key={idx}
-                    className={`timeline-step-item ${activeStep === idx ? 'active' : ''}`}
-                    onClick={() => setActiveStep(idx)}
-                  >
-                    <div className="step-number-badge font-mono">
-                      {idx + 1}
-                    </div>
-                    <div className="step-info-block">
-                      <span style={{ fontSize: '11px', color: 'var(--accent-soft)', fontWeight: 600, display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>{step.label}</span>
-                      <h3>{step.title}</h3>
-                      <p>{step.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Right: Step Visualizations */}
-              <div className="timeline-preview-frame">
-                {activeStep === 0 && (
-                  <div className="mock-connect-hub">
-                    <span className="section-head-tag">Step 1: Ingest AI Stack</span>
-                    <h3 style={{ marginBottom: '12px' }}>Enter your team's AI footprint</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>
-                      List active platforms, plan tiers, monthly budget estimates, and team size.
-                    </p>
-
-                    <div style={{ background: '#0e0e12', border: '1px solid var(--border-primary)', padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>Core Model Tool</span>
-                          <div style={{ background: '#18181b', border: '1px solid var(--border-primary)', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span>ChatGPT Plus</span>
-                            <ChevronDown size={10} />
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>Seats Allocated</span>
-                          <div style={{ background: '#18181b', border: '1px solid var(--border-primary)', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', color: '#ffffff' }} className="font-mono">
-                            45 seats
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.15)', padding: '8px 12px', borderRadius: '6px', fontSize: '11px', color: 'var(--accent-soft)' }}>
-                        <Sparkles size={12} />
-                        <span>Selected: Claude Pro, Cursor Developer, OpenAI API</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeStep === 1 && (
-                  <div>
-                    <span className="section-head-tag">Step 2: AI Audit Engine</span>
-                    <h3 style={{ marginBottom: '12px' }}>Scan for seat duplication & context leaks</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>
-                      Our algorithm runs cross-platform checks mapping workspace seat histories and sandbox API records.
-                    </p>
-
-                    <div style={{ background: '#0e0e12', border: '1px solid var(--border-primary)', padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        <span>Audit Search Progress</span>
-                        <span className="font-mono">88%</span>
-                      </div>
-                      <div style={{ height: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '999px', overflow: 'hidden' }}>
-                        <div style={{ width: '88%', height: '100%', background: 'var(--accent)' }}></div>
-                      </div>
-                      <span style={{ fontSize: '11px', color: '#ff8b77', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                        <Zap size={10} />
-                        <span>Flagged: 4 overlapping ChatGPT+Claude Pro sets, $680 playground test loop</span>
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {activeStep === 2 && (
-                  <div>
-                    <span className="section-head-tag">Step 3: Instant Cost Recovery</span>
-                    <h3 style={{ marginBottom: '12px' }}>Personalized PDF savings report</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
-                      Receive custom recommendations detailing active Pro licenses downgrade paths and key consolidations.
-                    </p>
-                    <div style={{ background: '#111815', border: '1px solid rgba(16, 185, 129, 0.15)', padding: '20px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <div style={{ width: '40px', height: '40px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, paddingLeft: '2px' }}>
-                        <ShieldCheck size={18} style={{ color: '#10b981' }} />
-                      </div>
-                      <div>
-                        <h5 style={{ color: '#ffffff', fontSize: '13px', marginBottom: '4px' }}>Sift AI Audit Successful</h5>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
-                          Identified $1,120 monthly overspend. Custom optimization checklist generated.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* SUPPORTED TOOLS */}
-          <section id="supported-tools" className="section-container tools-hub-sec">
-            <div className="section-head">
-              <span className="section-head-tag">Supported AI Connectors</span>
-              <h2 className="section-title">Integrates across your active model stack</h2>
-              <p className="section-desc">
-                Sift maps subscription plans, licensing logs, and raw token usage across all major generative AI interfaces and API channels.
-              </p>
-            </div>
-
-            <div className="tools-hub-grid">
-              {toolsList.map((tool, idx) => {
-                const ToolIcon = tool.icon;
-                return (
-                  <div
-                    key={idx}
-                    className="tool-hub-card"
-                    style={{ '--accent-local': tool.bg }}
-                  >
-                    <div className="tool-icon-wrapper">
-                      <ToolIcon size={24} />
-                    </div>
-                    <div>
-                      <span>{tool.name}</span>
-                      <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '4px' }}>{tool.category}</p>
-                    </div>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{tool.text}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* DYNAMIC SPEND AUDIT INPUT FORM SECTION */}
-          <section id="calculator" className="section-container">
-            <SpendForm
-              onSubmitSuccess={handleFormSubmit}
-              onCancel={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-          </section>
-
-          {/* COMMON AI OVERSPENDING MISTAKES */}
-          <section id="mistakes" className="section-container">
-            <div className="section-head">
-              <span className="section-head-tag">Diagnostics Matrix</span>
-              <h2 className="section-title">Common AI overspending mistakes</h2>
-              <p className="section-desc">
-                With fast AI adoption comes unchecked billing pipelines. Most development teams leak thousands on duplicate active tiers.
-              </p>
-            </div>
-
-            <div className="features-grid">
-              {overspendMistakes.map((mistake, idx) => {
-                const MistakeIcon = mistake.icon;
-                return (
-                  <div key={idx} className="feature-card">
-                    <div className="feature-icon-wrapper">
-                      <MistakeIcon size={20} />
-                    </div>
-                    <h3>{mistake.title}</h3>
-                    <p>{mistake.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* FAQ INTERACTIVE SECTION */}
-          <section id="faq" className="section-container">
-            <div className="section-head">
-              <span className="section-head-tag">Audit Details</span>
-              <h2 className="section-title">Frequently Asked Questions</h2>
-              <p className="section-desc">
-                Got questions about integrations, enterprise security, and pricing audit recommendations? Review our answers.
-              </p>
-            </div>
-
-            <div className="faq-grid">
-              {faqs.map((faq, idx) => (
-                <div
-                  key={idx}
-                  className={`faq-accordion-item ${openFaq === idx ? 'open' : ''}`}
-                >
-                  <button
-                    className="faq-trigger-btn"
-                    onClick={() => toggleFaq(idx)}
-                  >
-                    <h4>{faq.question}</h4>
-                    <ChevronDown size={16} className="faq-chevron" />
-                  </button>
-
-                  <div className="faq-content-drawer">
-                    <p>{faq.answer}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* FINAL CTA NEWSLETTER SECTION */}
-          <section id="cta" className="section-container">
-            <div className="cta-banner-card">
-              <span className="section-head-tag">Instant Stack Scan</span>
-              <h2 className="cta-heading">Get your free AI Spend Audit</h2>
-              <p className="cta-desc">
-                See how much your team could save on ChatGPT, Claude, Cursor, Copilot, and API spend. Connect Sift AI in under a minute.
-              </p>
-
-              <div className="cta-form-container">
-                {!isSubmitted ? (
-                  <form onSubmit={handleEmailSubmit} className="cta-input-group">
-                    <input
-                      type="email"
-                      required
-                      placeholder="Enter your enterprise email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="cta-input-field"
-                    />
-                    <button type="submit" className="btn-cta-submit">
-                      <span>Get My Free Audit</span>
-                      <ArrowRight size={14} />
-                    </button>
-                  </form>
-                ) : (
-                  <div className="cta-micro-feedback">
-                    <Check size={16} />
-                    <span>Audit scheduled! We have dispatched setup instructions to your inbox.</span>
-                  </div>
-                )}
-                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-                  SOC2 Certified. Safe read-only API connectors. No credit card required.
-                </span>
-              </div>
-            </div>
-          </section>
-        </>
-      )}
-
-      {/* RENDER AUDIT RESULTS PAGE */}
-      {currentRoute === 'results' && auditData && (
-        <section className="section-container" style={{ padding: '40px 24px' }}>
-          {/* Header */}
-          <div className="results-header-box">
-            <div className="hero-tag">
-              <div className="hero-tag-dot"></div>
-              <span>Fintech Cost Audit Complete</span>
-            </div>
-            <h1 className="title-large" style={{ marginBottom: '16px', fontSize: '48px' }}>
-              Your Cost Recovery Report
-            </h1>
-            <p className="hero-subtitle" style={{ maxWidth: '640px', marginBottom: '24px' }}>
-              We analyzed {auditData.tools.length} active platform integrations across your enterprise team of {auditData.teamSize} members using our rule-based Fintech Audit Engine.
-            </p>
-          </div>
-
-          <div className="results-console-card">
-            {/* SAVINGS HERO */}
-            <div className="premium-savings-hero">
-              <div className="hero-glow-back"></div>
-              <div className="savings-hero-content">
-                <span className="savings-hero-sub">Estimated Annual Recovery Opportunity</span>
-                <h2 className="savings-hero-big text-gradient-accent">
-                  You can save ${auditResult.annualSavings.toLocaleString()}/year
-                </h2>
-                <p className="savings-hero-desc">
-                  Consolidating subscription packages and implementing prompt restrictions will recover approx. <strong>${auditResult.monthlySavings.toLocaleString()}/month</strong> instantly.
-                </p>
-              </div>
-            </div>
-
-            {/* AUDIT SCORE AND METER DETAILS */}
-            <div className="results-stats-row">
-              <div className="dashboard-stat-card">
-                <div className="stat-label">Stack Waste Index</div>
-                <div className="stat-value-container">
-                  <span className="stat-value font-mono color-glow-text" style={{ color: auditResult.summary.wasteScore > 30 ? '#ff8b77' : auditResult.summary.wasteScore > 15 ? '#f59e0b' : '#10b981' }}>
-                    {auditResult.summary.wasteScore}%
-                  </span>
-                </div>
-                <div className="stat-footer-text">
-                  <TrendingDown size={12} className="warning-text-icon" />
-                  <span>Gross billing rate inefficiencies</span>
-                </div>
-              </div>
-
-              <div className="dashboard-stat-card">
-                <div className="stat-label">Stack Efficiency Rank</div>
-                <div className="stat-value-container">
-                  <span className="stat-value" style={{ color: auditResult.summary.stackEfficiency === 'Low' ? '#ff8b77' : auditResult.summary.stackEfficiency === 'Moderate' ? '#f59e0b' : '#10b981' }}>
-                    {auditResult.summary.stackEfficiency}
-                  </span>
-                </div>
-                <div className="stat-footer-text">
-                  <ShieldCheck size={12} className="accent-text-icon" />
-                  <span>Cost-to-benefit profile score</span>
-                </div>
-              </div>
-
-              <div className="dashboard-stat-card highlighted">
-                <div className="stat-label">Optimization Paths Found</div>
-                <div className="stat-value-container text-gradient-accent">
-                  <span className="stat-value font-mono">{auditResult.summary.opportunitiesFound}</span>
-                </div>
-                <div className="stat-footer-text">
-                  <Sparkles size={12} className="accent-text-icon" />
-                  <span>Actionable recovery guidelines</span>
-                </div>
-              </div>
-            </div>
-
-            {/* SPLIT LAYOUT: LEFT RECOMMENDATIONS, RIGHT SPENDING BREAKDOWN & CTA */}
-            <div className="results-grid-split">
-              {/* Recommendations List */}
-              <div className="results-optimizations-panel" style={{ flexGrow: 1 }}>
-                <div className="panel-header" style={{ marginBottom: '16px' }}>
-                  <div className="panel-title-sec">
-                    <Zap size={15} className="accent-text-icon" />
-                    <h4>Recommended Recovery Operations</h4>
-                  </div>
-                  <span className="panel-count font-mono">{auditResult.recommendations.length} Flagged</span>
-                </div>
-
-                <div className="checklist-list">
-                  {auditResult.recommendations.length > 0 ? (
-                    auditResult.recommendations.map((rec, idx) => (
-                      <div key={idx} className="results-checklist-item" style={{ borderLeft: rec.severity === 'high' ? '3px solid #ff8b77' : rec.severity === 'medium' ? '3px solid #f59e0b' : '3px solid var(--accent)' }}>
-                        <div className="results-checklist-item-text" style={{ width: '100%' }}>
-                          <div className="results-audit-item-head" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <h5 style={{ fontSize: '14px', margin: 0 }}>{rec.title}</h5>
-                              <span className={`severity-badge severity-${rec.severity}`}>
-                                {rec.severity}
-                              </span>
-                            </div>
-                            <span className="results-reclaim-badge font-mono">
-                              Save ${rec.monthlySavings}/mo
-                            </span>
-                          </div>
-                          <p style={{ color: 'var(--text-secondary)', fontSize: '12.5px', marginTop: '6px', lineHeight: '1.5' }}>
-                            {rec.reason}
-                          </p>
-                          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', display: 'block', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Affected Stack: {rec.tool}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="all-clean-state" style={{ padding: '32px 16px' }}>
-                      <div className="all-clean-icon-wrapper">
-                        <ShieldCheck size={28} className="accent-text-icon" />
-                      </div>
-                      <h5>Excellent Configuration!</h5>
-                      <p>Our cost optimization engine discovered no obvious overspending paths for your stack setup. All systems are running efficiently.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Side Panel: Spending Breakdown & Email Capture */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {/* Spending Breakdown */}
-                <div className="results-optimizations-panel">
-                  <div className="panel-header" style={{ marginBottom: '16px' }}>
-                    <div className="panel-title-sec">
-                      <Settings size={15} className="accent-text-icon" />
-                      <h4>Monthly Spend Breakdown</h4>
-                    </div>
-                  </div>
-
-                  <div className="breakdown-details-panel">
-                    <div className="breakdown-meter-container">
-                      <div className="breakdown-meter-label flex-between">
-                        <span>Current Monthly Spend</span>
-                        <span className="font-mono" style={{ fontWeight: 600 }}>${auditResult.summary.totalSpend.toLocaleString()}</span>
-                      </div>
-                      <div className="breakdown-meter-bar-bg">
-                        <div className="breakdown-meter-bar current" style={{ width: '100%' }}></div>
-                      </div>
-                    </div>
-
-                    <div className="breakdown-meter-container" style={{ marginTop: '20px' }}>
-                      <div className="breakdown-meter-label flex-between">
-                        <span>Optimized Monthly Spend</span>
-                        <span className="font-mono" style={{ color: 'var(--accent-soft)', fontWeight: 600 }}>
-                          ${(auditResult.summary.totalSpend - auditResult.monthlySavings).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="breakdown-meter-bar-bg">
-                        <div 
-                          className="breakdown-meter-bar optimized" 
-                          style={{ 
-                            width: `${auditResult.summary.totalSpend > 0 ? ((auditResult.summary.totalSpend - auditResult.monthlySavings) / auditResult.summary.totalSpend) * 100 : 0}%` 
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <hr className="form-section-divider" style={{ margin: '20px 0' }} />
-
-                    <div className="breakdown-row" style={{ marginBottom: '10px' }}>
-                      <span style={{ fontSize: '13px' }}>Primary Use Case</span>
-                      <span style={{ textTransform: 'capitalize', fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>{auditData.primaryUseCase}</span>
-                    </div>
-                    <div className="breakdown-row" style={{ marginBottom: '10px' }}>
-                      <span style={{ fontSize: '13px' }}>Total Team Size</span>
-                      <span className="font-mono" style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>{auditData.teamSize} members</span>
-                    </div>
-                    <div className="breakdown-row">
-                      <span style={{ fontSize: '13px' }}>Monthly Recovery Yield</span>
-                      <span className="font-mono" style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>
-                        +${auditResult.monthlySavings.toLocaleString()}/mo
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Get Full Audit Report Email Capture */}
-                <div className="results-optimizations-panel highlighted-card">
-                  <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sparkles size={14} className="accent-text-icon" />
-                    <span>Get Full Audit Report</span>
-                  </h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '12px', lineHeight: 1.5, marginBottom: '16px' }}>
-                    Download a comprehensive SOC2-compliant cost optimization breakdown PDF complete with step-by-step downgrade guides.
-                  </p>
-
-                  <div className="cta-email-box">
-                    {!isSubmitted ? (
-                      <form onSubmit={handleEmailSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <input
-                          type="email"
-                          required
-                          placeholder="enter enterprise email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="cta-input-field"
-                          style={{ width: '100%', fontSize: '12px', padding: '10px 14px' }}
-                        />
-                        <button type="submit" className="btn-primary" style={{ width: '100%', padding: '10px 14px', fontSize: '12px', justifyContent: 'center' }}>
-                          <span>Dispatch PDF Report</span>
-                          <ArrowRight size={12} />
-                        </button>
-                      </form>
-                    ) : (
-                      <div className="cta-micro-feedback" style={{ padding: '10px', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '6px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981' }}>
-                        <Check size={12} />
-                        <span>PDF Scheduled for delivery!</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions Footer */}
-            <button
-              onClick={() => {
-                setCurrentRoute('landing');
-                setAuditData(null);
-              }}
-              className="results-back-btn"
-              style={{ marginTop: '40px' }}
-            >
-              <RotateCcw size={14} />
-              <span>Audit Another Stack</span>
-            </button>
-          </div>
-        </section>
-      )}
+      {/* RENDER THE ACTIVE SCREEN */}
+      {renderRoutedPage()}
 
       {/* FOOTER */}
       <footer className="premium-footer">
         <div className="footer-inner">
           <div className="footer-grid-nav">
             <div className="footer-brand-column">
-              <a href="#" className="brand-logo" onClick={() => setCurrentRoute('landing')}>
+              <a href="#" className="brand-logo" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
                 <div className="brand-dot"></div>
                 <span>Sift AI</span>
               </a>
@@ -741,18 +554,18 @@ export default function App() {
             <div className="footer-column">
               <span className="footer-column-title">Audit Engine</span>
               <div className="footer-links-list">
-                <a href="#mistakes" className="footer-link">AI Mistakes</a>
-                <a href="#how-it-works" className="footer-link">How it Works</a>
-                <a href="#calculator" className="footer-link">Audit Form</a>
+                <a href="#mistakes" className="footer-link" onClick={handleScrollToForm}>AI Mistakes</a>
+                <a href="#how-it-works" className="footer-link" onClick={handleScrollToForm}>How it Works</a>
+                <button onClick={() => navigate('/audit')} className="footer-link-btn-text">Audit Form</button>
               </div>
             </div>
 
             <div className="footer-column">
               <span className="footer-column-title">Supported AI</span>
               <div className="footer-links-list">
-                <a href="#supported-tools" className="footer-link">ChatGPT &amp; Claude</a>
-                <a href="#supported-tools" className="footer-link">Cursor &amp; Copilot</a>
-                <a href="#supported-tools" className="footer-link">API Keys</a>
+                <a href="#supported-tools" className="footer-link" onClick={handleScrollToForm}>ChatGPT &amp; Claude</a>
+                <a href="#supported-tools" className="footer-link" onClick={handleScrollToForm}>Cursor &amp; Copilot</a>
+                <a href="#supported-tools" className="footer-link" onClick={handleScrollToForm}>API Keys</a>
               </div>
             </div>
 
