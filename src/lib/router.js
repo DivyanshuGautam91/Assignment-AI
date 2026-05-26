@@ -26,8 +26,14 @@ export function useRouter() {
     };
   }, []);
 
+  const isReport = path.startsWith('/report/');
+  const reportId = isReport ? path.substring(8).split('/')[0] || null : null;
+
   return {
     path,
-    navigate
+    navigate,
+    params: {
+      id: reportId
+    }
   };
 }

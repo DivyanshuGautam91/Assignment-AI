@@ -21,6 +21,7 @@ import {
 import { useRouter, navigate } from './lib/router';
 import { storage } from './lib/storage';
 import { auditEngine } from './services/auditEngine';
+import { useAudit } from './hooks/useAudit';
 
 // Page components
 import AuditPage from './pages/AuditPage';
@@ -32,7 +33,8 @@ import NotFoundPage from './pages/NotFoundPage';
 import InteractiveDashboard from './components/InteractiveDashboard';
 
 export default function App() {
-  const { path } = useRouter();
+  const { path, params } = useRouter();
+  const { submitLead, error: leadError } = useAudit();
 
   // Timeline Step State
   const [activeStep, setActiveStep] = useState(0);
@@ -62,14 +64,19 @@ export default function App() {
     }
   };
 
-  const handleEmailSubmit = (e) => {
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
     if (email.trim() && email.includes('@')) {
-      setIsSubmitted(true);
-      setTimeout(() => {
-        setIsSubmitted(false);
-        setEmail('');
-      }, 3000);
+      const cachedInput = storage.loadAuditInput();
+      const cachedResult = storage.loadAuditResult();
+      const success = await submitLead(email, cachedInput, cachedResult);
+      if (success) {
+        setIsSubmitted(true);
+        setTimeout(() => {
+          setIsSubmitted(false);
+          setEmail('');
+        }, 5000);
+      }
     }
   };
 
@@ -180,6 +187,10 @@ export default function App() {
 
   // Route Controller Dispatcher
   const renderRoutedPage = () => {
+    if (path.startsWith('/report/') && params.id) {
+      return <ResultsPage reportId={params.id} />;
+    }
+
     switch (path) {
       case '/':
         return (
@@ -452,9 +463,9 @@ export default function App() {
             <section id="cta" className="section-container">
               <div className="cta-banner-card">
                 <span className="section-head-tag">Instant Stack Scan</span>
-                <h2 className="cta-heading">Get your free AI Spend Audit</h2>
+                <h2 className="cta-heading">Want a detailed optimization report?</h2>
                 <p className="cta-desc">
-                  See how much your team could save on ChatGPT, Claude, Cursor, Copilot, and API spend. Connect Sift AI in under a minute.
+                  Receive a secured, comprehensive SOC2-compliant cost consolidation and model optimization blueprint in your inbox.
                 </p>
 
                 <div className="cta-form-container">
@@ -476,7 +487,7 @@ export default function App() {
                   ) : (
                     <div className="cta-micro-feedback">
                       <Check size={16} />
-                      <span>Audit scheduled! We have dispatched setup instructions to your inbox.</span>
+                      <span>Your audit report has been saved.</span>
                     </div>
                   )}
                   <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
