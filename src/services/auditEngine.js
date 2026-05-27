@@ -58,7 +58,7 @@ export const auditEngine = {
       }
     }
 
-    // 3. Duplicate Conversational Stack
+    // 3. Duplicate Conversational Stack (ChatGPT & Claude Pro/Team)
     const claude = findTool('claude');
     if (chatgpt && claude) {
       const rule = AUDIT_RULES.find(r => r.id === 'duplicate-chat-assistants');
@@ -77,7 +77,76 @@ export const auditEngine = {
       }
     }
 
-    // 4. Idle Seat Suspicion
+    // 4. Gemini Overlap alongside ChatGPT or Claude
+    const gemini = findTool('gemini');
+    if (gemini && (chatgpt || claude)) {
+      const rule = AUDIT_RULES.find(r => r.id === 'gemini-chatgpt-overlap');
+      const savings = Math.round(savingsCalculator.getGeminiOverlapSavings(gemini));
+      if (savings > 0) {
+        recommendations.push({
+          tool: 'Gemini',
+          title: rule.title,
+          reason: rule.reason,
+          monthlySavings: savings,
+          severity: rule.severity
+        });
+        overlapSavingsDeductions['gemini'] = true;
+      }
+    }
+
+    // 5. Coding Autocompletes Duplication (GitHub Copilot redundantly alongside Cursor IDE)
+    const copilot = findTool('copilot');
+    if (cursor && copilot) {
+      const rule = AUDIT_RULES.find(r => r.id === 'copilot-cursor-duplication');
+      const savings = Math.round(savingsCalculator.getCopilotRedundancySavings(copilot));
+      if (savings > 0) {
+        recommendations.push({
+          tool: 'GitHub Copilot',
+          title: rule.title,
+          reason: rule.reason,
+          monthlySavings: savings,
+          severity: rule.severity
+        });
+        overlapSavingsDeductions['copilot'] = true;
+      }
+    }
+
+    // 6. IDE Duplication (Cursor alongside Windsurf)
+    const windsurf = findTool('windsurf');
+    if (cursor && windsurf) {
+      const rule = AUDIT_RULES.find(r => r.id === 'ide-duplication');
+      const savings = Math.round(savingsCalculator.getIdeOverlapSavings(cursor, windsurf));
+      if (savings > 0) {
+        recommendations.push({
+          tool: 'Cursor & Windsurf',
+          title: rule.title,
+          reason: rule.reason,
+          monthlySavings: savings,
+          severity: rule.severity
+        });
+        overlapSavingsDeductions['cursor'] = true;
+        overlapSavingsDeductions['windsurf'] = true;
+      }
+    }
+
+    // 7. v0 Frontend UI Seat Sprawl Redundancy
+    const v0 = findTool('v0');
+    if (v0) {
+      const rule = AUDIT_RULES.find(r => r.id === 'v0-seat-redundancy');
+      const savings = Math.round(savingsCalculator.getV0RedundancySavings(v0, teamSize));
+      if (savings > 0) {
+        recommendations.push({
+          tool: 'v0 by Vercel',
+          title: rule.title,
+          reason: `Out of ${v0.seats} allocated seats for a team size of ${teamSize}, most roles do not edit UI styles. ` + rule.reason,
+          monthlySavings: savings,
+          severity: rule.severity
+        });
+        overlapSavingsDeductions['v0'] = true;
+      }
+    }
+
+    // 8. Idle Seat Suspicion (Check remaining tools whose seats exceed active headcount)
     tools.forEach(tool => {
       if (tool.seats > teamSize && !overlapSavingsDeductions[tool.toolId]) {
         const rule = AUDIT_RULES.find(r => r.id === 'idle-seat-suspicion');
@@ -87,7 +156,22 @@ export const auditEngine = {
             ? 'OpenAI API' 
             : tool.toolId === 'anthropic_api' 
             ? 'Anthropic API' 
+            : tool.toolId === 'chatgpt'
+            ? 'ChatGPT'
+            : tool.toolId === 'claude'
+            ? 'Claude'
+            : tool.toolId === 'cursor'
+            ? 'Cursor'
+            : tool.toolId === 'copilot'
+            ? 'GitHub Copilot'
+            : tool.toolId === 'gemini'
+            ? 'Gemini'
+            : tool.toolId === 'windsurf'
+            ? 'Windsurf'
+            : tool.toolId === 'v0'
+            ? 'v0 by Vercel'
             : tool.toolId.toUpperCase();
+
           recommendations.push({
             tool: formattedToolName,
             title: `${rule.title} (${formattedToolName})`,
@@ -99,7 +183,7 @@ export const auditEngine = {
       }
     });
 
-    // 5. High API Spend / Prompt Caching
+    // 9. High API Spend / Prompt Caching (OpenAI API / Anthropic API)
     const openaiApi = findTool('openai_api');
     if (openaiApi && openaiApi.monthlySpend > 300) {
       const rule = AUDIT_RULES.find(r => r.id === 'high-api-spend');
@@ -121,22 +205,6 @@ export const auditEngine = {
       if (savings > 0) {
         recommendations.push({
           tool: 'Anthropic API Direct',
-          title: rule.title,
-          reason: rule.reason,
-          monthlySavings: savings,
-          severity: rule.severity
-        });
-      }
-    }
-
-    // 6. Coding Autocompletes Duplication
-    const copilot = findTool('copilot');
-    if (cursor && copilot) {
-      const rule = AUDIT_RULES.find(r => r.id === 'copilot-cursor-duplication');
-      const savings = Math.round(savingsCalculator.getCopilotRedundancySavings(copilot));
-      if (savings > 0) {
-        recommendations.push({
-          tool: 'GitHub Copilot',
           title: rule.title,
           reason: rule.reason,
           monthlySavings: savings,
