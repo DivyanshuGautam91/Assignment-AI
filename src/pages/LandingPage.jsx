@@ -33,6 +33,8 @@ export default function LandingPage() {
 
   // Email CTA State
   const [email, setEmail] = useState('');
+  const [company, setCompany] = useState('');
+  const [role, setRole] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   // FAQ Accordion State
@@ -52,12 +54,14 @@ export default function LandingPage() {
     if (email.trim() && email.includes('@')) {
       const cachedInput = storage.loadAuditInput();
       const cachedResult = storage.loadAuditResult();
-      const success = await submitLead(email, cachedInput, cachedResult);
+      const success = await submitLead(email, company, role, cachedInput, cachedResult);
       if (success) {
         setIsSubmitted(true);
         setTimeout(() => {
           setIsSubmitted(false);
           setEmail('');
+          setCompany('');
+          setRole('');
         }, 5000);
       }
     }
@@ -371,16 +375,35 @@ export default function LandingPage() {
 
           <div className="cta-form-container">
             {!isSubmitted ? (
-              <form onSubmit={handleEmailSubmit} className="cta-input-group">
+              <form onSubmit={handleEmailSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '480px', margin: '0 auto', width: '100%' }}>
                 <input
                   type="email"
                   required
-                  placeholder="Enter your enterprise email"
+                  placeholder="Enter your enterprise email *"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="cta-input-field"
+                  style={{ width: '100%' }}
                 />
-                <button type="submit" className="btn-cta-submit">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%' }}>
+                  <input
+                    type="text"
+                    placeholder="Company (optional)"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    className="cta-input-field"
+                    style={{ width: '100%' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Role (CTO, PM, etc.) (optional)"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="cta-input-field"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <button type="submit" className="btn-cta-submit" style={{ width: '100%', justifyContent: 'center' }}>
                   <span>Get My Free Audit</span>
                   <ArrowRight size={14} />
                 </button>

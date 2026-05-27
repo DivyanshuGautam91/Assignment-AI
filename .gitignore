@@ -1,3 +1,20 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+dist-ssr
+build
+coverage
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Local config
+*.local
+
 # Logs
 logs
 *.log
@@ -7,18 +24,36 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Cache
+.cache
+.parcel-cache
+.eslintcache
+.vite
+
+# Testing
+test-results
+playwright-report
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Misc
+.vercel

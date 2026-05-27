@@ -34,6 +34,8 @@ export default function ResultsPage({ reportId }) {
   const [auditInput, setAuditInput] = useState(null);
   const [auditResult, setAuditResult] = useState(null);
   const [email, setEmail] = useState('');
+  const [company, setCompany] = useState('');
+  const [role, setRole] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [currentReportId, setCurrentReportId] = useState(reportId || null);
   const [toastMessage, setToastMessage] = useState(null);
@@ -100,11 +102,13 @@ export default function ResultsPage({ reportId }) {
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     if (email.trim() && email.includes('@')) {
-      const success = await submitLead(email, auditInput, auditResult);
+      const success = await submitLead(email, company, role, auditInput, auditResult);
       if (success) {
         setIsSubmitted(true);
         setTimeout(() => {
           setEmail('');
+          setCompany('');
+          setRole('');
         }, 5000);
       }
     }
@@ -268,6 +272,8 @@ export default function ResultsPage({ reportId }) {
               recommendations={auditResult.recommendations}
               wasteScore={auditResult.summary.wasteScore}
               stackEfficiency={auditResult.summary.stackEfficiency}
+              auditInput={auditInput}
+              auditResult={auditResult}
             />
 
             <Recommendations 
@@ -304,9 +310,25 @@ export default function ResultsPage({ reportId }) {
                     <input
                       type="email"
                       required
-                      placeholder="enter enterprise email"
+                      placeholder="enter enterprise email *"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      className="cta-input-field"
+                      style={{ width: '100%', fontSize: '13px', padding: '12px 14px', background: '#09090b' }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="company (optional)"
+                      value={company}
+                      onChange={(e) => setCompany(e.target.value)}
+                      className="cta-input-field"
+                      style={{ width: '100%', fontSize: '13px', padding: '12px 14px', background: '#09090b' }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="your role (e.g. CTO) (optional)"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
                       className="cta-input-field"
                       style={{ width: '100%', fontSize: '13px', padding: '12px 14px', background: '#09090b' }}
                     />

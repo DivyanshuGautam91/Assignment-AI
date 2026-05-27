@@ -1,5 +1,5 @@
-import { AUDIT_RULES } from '../constants/auditRules';
-import { savingsCalculator } from '../utils/savingsCalculator';
+import { AUDIT_RULES } from '../constants/auditRules.js';
+import { savingsCalculator } from '../utils/savingsCalculator.js';
 
 export const auditEngine = {
   run: (input) => {

@@ -1,6 +1,8 @@
 export interface AuditLead {
   id?: string;
   email: string;
+  company?: string;
+  role?: string;
   team_size: number;
   primary_use_case: string;
   total_spend: number;

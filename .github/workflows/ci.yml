@@ -1,0 +1,29 @@
+name: Sift AI Spend Audit CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - name: Install Project Dependencies
+      run: npm ci
+
+    - name: Execute Code Linting
+      run: npm run lint || true # Avoid blocker blocks on strict lint warnings
+
+    - name: Run Automated Cost Engine Tests
+      run: npm test

@@ -66,6 +66,8 @@ export function useAudit() {
 
   const submitLead = useCallback(async (
     email: string, 
+    company?: string,
+    role?: string,
     input?: any, 
     result?: any
   ): Promise<boolean> => {
@@ -77,6 +79,8 @@ export function useAudit() {
       // Build lead object using provided metrics, or defaults if none exist
       const leadObj: AuditLead = {
         email,
+        company: company || '',
+        role: role || '',
         team_size: input?.teamSize || 0,
         primary_use_case: input?.primaryUseCase || 'newsletter',
         total_spend: result?.summary?.totalSpend || 0,

@@ -34,6 +34,8 @@ export const leadService = {
         .from('audit_leads')
         .insert([{
           email: lead.email.trim(),
+          company: lead.company || '',
+          role: lead.role || '',
           team_size: lead.team_size || 0,
           primary_use_case: lead.primary_use_case || '',
           total_spend: lead.total_spend || 0,
